@@ -46,12 +46,51 @@ class Reservoir:
         inputsTransposed = inputs.T
         self.outWeights = np.dot(np.dot(targets.T, inputs), np.linalg.inv(np.dot(inputsTransposed, inputs) + 1e-6*np.eye(self.res_dim)))
 
-    def getVals(self, inputs):
-        """For use once the reservoir is trained. Gives outputs based off the inmputs
+    def getVals(self, inputs, currentOutputs):
+        """For use once the reservoir is trained. Gives outputs based off the inputs
         """
-        #TODO make getvals function 
-        #temp line to make IDE happy
-        return inputs * self.outWeights
+
+        def f_res(x, u, t):
+            c = 1
+            noise_f = .000000001
+            temp1 = (-1/c)*x
+            temp3 = np.dot(self.inWeights, u)
+            temp4 = np.dot(self.matrix, x)
+            temp2 = (1/c)*np.tanh(temp3 + temp4 + self.bias)
+            return temp1 + temp2 + noise_f*np.random.normal(size=(self.res_dim))
+
+        def runge_kutta_4(f, h, x, u, t):
+            """Function for solving a differential equation (with input) 
+            according to a 4th-order Runge-Kutta method.
+
+            Args:
+                f (func): The differential equation to solve. It must take as
+                arguments a state-space vector x of size (x_dim,), an input
+                vector u of size (u_dim,) and a float time t. It must return
+                a state-derivative vector xdot of size (x_dim,).
+                h (float): The integration times-step.
+                x (array): The current state-space vector.
+                u (array): The current input vector.
+                t (array): The current time.
+
+            Returns:
+                An array of size (x_dim,) that is the value of x at t + h,
+                according to f and u.
+            """
+
+            def k1(f, h, x, u, t):
+                return f(x, u, t)
+            def k2(f, h, x, u, t):
+                return f(x + (h/2)*k1(f, h, x, u, t), u, t + (h/2))
+            def k3(f, h, x, u, t):
+                return f(x + (h/2)*k2(f, h, x, u, t), u, t + (h/2))
+            def k4(f, h, x, u, t):
+                return f(x + h*k3(f, h, x, u, t), u, t + h)
+
+            return x + (h/6)*(k1(f, h, x, u, t) + 2*k2(f, h, x, u, t) + 2*k3(f, h, x, u, t) + k4(f, h, x, u, t))
+        newOutputs = runge_kutta_4(f_res, 1, currentOutputs, inputs, 1)
+        newOutputs = newOutputs.reshape(1, self.res_dim)
+        return newOutputs
 
     def exportReservoir(self):
         """Exports the reservoir
