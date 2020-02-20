@@ -22,6 +22,7 @@ class Reservoir:
         self.timeConst = timeConst
         self.density = density
         self.biasScale = biasScale
+        self.output = 0
 
         self.inWeights = np.random.uniform(low=-1, high=1, size=(res_dim, in_dim))
 
@@ -45,6 +46,10 @@ class Reservoir:
         """
         inputsTransposed = inputs.T
         self.outWeights = np.dot(np.dot(targets.T, inputs), np.linalg.inv(np.dot(inputsTransposed, inputs) + 1e-6*np.eye(self.res_dim)))
+        def g_res(x, t):
+            noise_g = 0
+            return np.dot(self.outWeights, x.T).T + noise_g*np.random.normal(size=(self.out_dim))
+        self.outputs = g_res(inputs, 0)
 
     def getVals(self, inputs, currentOutputs):
         """For use once the reservoir is trained. Gives outputs based off the inputs
@@ -52,12 +57,14 @@ class Reservoir:
 
         def f_res(x, u, t):
             c = 1
-            noise_f = .000000001
-            temp1 = (-1/c)*x
-            temp3 = np.dot(self.inWeights, u)
-            temp4 = np.dot(self.matrix, x)
-            temp2 = (1/c)*np.tanh(temp3 + temp4 + self.bias)
-            return temp1 + temp2 + noise_f*np.random.normal(size=(self.res_dim))
+            #noise_f = 0
+            temp1 = (-1/c)*x + (1/c)*np.tanh(np.dot(self.inWeights, u) + np.dot(self.matrix, x) + self.bias.reshape(50,1)) #+ noise_f*np.random.normal(size=(self.res_dim))
+            #print(temp1.shape)
+            return temp1
+
+        def g_res(x, t):
+            noise_g = 0
+            return np.dot(self.outWeights, x.T).T + noise_g*np.random.normal(size=(self.out_dim))
 
         def runge_kutta_4(f, h, x, u, t):
             """Function for solving a differential equation (with input) 
@@ -88,9 +95,11 @@ class Reservoir:
                 return f(x + h*k3(f, h, x, u, t), u, t + h)
 
             return x + (h/6)*(k1(f, h, x, u, t) + 2*k2(f, h, x, u, t) + 2*k3(f, h, x, u, t) + k4(f, h, x, u, t))
+
         newOutputs = runge_kutta_4(f_res, 1, currentOutputs, inputs, 1)
         newOutputs = newOutputs.reshape(1, self.res_dim)
-        return newOutputs
+        self.output = g_res(newOutputs, 1)
+        return self.output
 
     def exportReservoir(self):
         """Exports the reservoir
