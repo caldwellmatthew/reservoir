@@ -5,7 +5,7 @@ import scipy.sparse
 import sys
 
 class Reservoir:
-    def __init__(self, in_dim, res_dim, out_dim, timeConst=1, density=0.1, biasScale=1.0, SR = 1.0):
+    def __init__(self, in_dim, res_dim, out_dim, timeConst=1, density=0.1, biasScale=1.0, SR = 1.0, reg = 1e-6):
         """
         The initialization method for a Reservoir object.
 
@@ -16,6 +16,8 @@ class Reservoir:
             timeConst (float): Time constant for the reservoir, may be useless
             density (float): A number between 0 and 1. The rate of connections in the reservoir matrix
             biasScale (float): Used to initialize the bias vector
+            SR (float): Parameter that controls how out of control reservoir might go. Should be around 1
+            reg (float): The regularization parameter. The smaller reg is the more succeptable to noise the reservoir will be
         """
         self.in_dim = in_dim
         self.res_dim = res_dim
@@ -25,6 +27,7 @@ class Reservoir:
         self.biasScale = biasScale
         self.SR = SR
         self.output = 0
+        self.reg = reg
 
         self.inWeights = np.random.uniform(low=-1, high=1, size=(res_dim, in_dim))
 
@@ -33,46 +36,51 @@ class Reservoir:
         W_rho = max(abs(np.linalg.eig(W.A)[0]))
         self.matrix = self.SR*W.A/W_rho
 
-        self.bias = biasScale*np.random.uniform(low=-1, high=1, size=(res_dim))
+        self.bias = biasScale*np.random.uniform(low=-1, high=1, size=(res_dim, 1))
 
         self.outWeights = np.zeros((out_dim, res_dim))
         self.times = np.zeros(1)
         self.state = np.zeros((1,res_dim))
 
-    def train(self, targets, initTime = 0):
+    def train(self, targets, initIndex = 0):
         """
         Trains the reservoir by changing self.outWeights
 
         Changes self.outWeights
 
         Args:
-            inputs (matrix): The set of inputs that will be used for training
-            targets (matrix): The set of targets training should aim for
+            targets (matrix): The set of targets the reservoir should aim for. Should be a matrix with
+            a shape of (N, M) where N is the history of targets and M should be the size of out_dim
+            initIndex (integer): the initial time index that will be trained on.
         """
         tempTime = targets.shape[0]
-        X = self.state[initTime:initTime + tempTime]
-        #print(X)
+        X = self.state[initIndex:initIndex + tempTime]
         X_T = X.T
-        self.outWeights = np.dot(np.dot(targets.T, X), np.linalg.inv(np.dot(X_T, X) + 1e-6*np.eye(self.res_dim)))
+        self.outWeights = np.dot(np.dot(targets.T, X), np.linalg.inv(np.dot(X_T, X) + self.reg*np.eye(self.res_dim)))
         def g_res(x, t):
             noise_g = 0
             return np.dot(self.outWeights, x.T).T + noise_g*np.random.normal(size=(self.out_dim))
         self.outputs = g_res(self.state, 0)
 
-    def getVals(self, inputs, timeStep = .1):
+    def propagate(self, inputs, timeStep = .1):
         """
         For use once the reservoir is trained. Gives outputs based off the inputs
+
+        adds another row on self.state
+        sets self.outputs to equal the new outputs
+        adds the next time onto self.times
+        returns self.outputs
+
+        Args:
+            inputs (matrix): An array of inputs to the reservoir of shape (N, 1) where N is of size
+            in_dim
+            timeStep (float): The time the reservoir will predict ahead by.
         """
 
         def f_res(x, u, t):
             c = 1
-            #noise_f = 0
-            if x.shape == (self.res_dim,):
-                x = x.reshape(self.res_dim,1)
-            #print(x.shape)
-            temp1 = (-1/c)*x + (1/c)*np.tanh(np.dot(self.inWeights, u) + np.dot(self.matrix, x) + self.bias.reshape(50,1)) #+ noise_f*np.random.normal(size=(self.res_dim))
-            #print(temp1.shape)
-            return temp1
+            noise_f = 0
+            return (-1/c)*x + (1/c)*np.tanh(np.dot(self.inWeights, u) + np.dot(self.matrix, x) + self.bias) + noise_f*np.random.normal(size=(self.res_dim, 1))
 
         def g_res(x, t):
             noise_g = 0
@@ -109,7 +117,7 @@ class Reservoir:
 
             return x + (h/6)*(k1(f, h, x, u, t) + 2*k2(f, h, x, u, t) + 2*k3(f, h, x, u, t) + k4(f, h, x, u, t))
 
-        propagations = runge_kutta_4(f_res, timeStep, self.state[-1].reshape(50,1), inputs, self.times[-1])
+        propagations = runge_kutta_4(f_res, timeStep, self.state[-1].reshape(self.res_dim,1), inputs, self.times[-1])
         propagations = propagations.reshape(1, self.res_dim)
         self.state = np.append(self.state, propagations, axis=0)
         self.output = g_res(propagations, 1)
