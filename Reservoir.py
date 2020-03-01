@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.stats
 import scipy.sparse
 import sys
+import pathlib
 
 class Reservoir:
     def __init__(self, in_dim, res_dim, out_dim, timeConst=1, density=0.1, biasScale=1.0, SR = 1.0, reg = 1e-6):
@@ -124,10 +125,18 @@ class Reservoir:
         self.times = np.append(self.times, self.times[-1]+timeStep)
         return self.output
 
-    def exportReservoir(self):
+    def exportReservoir(self, path = ""):
         """
         Exports the reservoir
+
+        Args:
+            path (string): useful for putting the data in a separate folder. Should follow format
+            "Folder name here/"
         """
-        #TODO figure out format of export
-        #temp line to make IDE happy
-        print("this will do something eventually")
+        tempPath = pathlib.Path(__file__).parent.resolve() / path 
+        np.savetxt(tempPath / "reservoirWeights.txt", self.matrix, '%f', '\t')
+        np.savetxt(tempPath / "inputWeights.txt", self.inWeights, '%f', '\t')
+        np.savetxt(tempPath / "outputWeights.txt", self.outWeights, '%f', '\t')
+        np.savetxt(tempPath / "states.txt", self.state, '%f', '\t')
+        np.savetxt(tempPath / "times.txt", self.times, '%f', '\t')
+        np.savetxt(tempPath / "bias.txt", self.bias, '%f', '\t')

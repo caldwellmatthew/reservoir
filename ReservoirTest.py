@@ -31,3 +31,5 @@ for x in range(50):
     #outputM = np.append(outputM, [[50]], axis = 0)
     print("input: ", inputM)
     print("output: ", output)
+
+res.exportReservoir()
