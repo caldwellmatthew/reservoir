@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.stats
 import scipy.sparse
 import sys
@@ -79,9 +78,8 @@ class Reservoir:
         """
 
         def f_res(x, u, t):
-            c = 1
             noise_f = 0
-            return (-1/c)*x + (1/c)*np.tanh(np.dot(self.inWeights, u) + np.dot(self.matrix, x) + self.bias) + noise_f*np.random.normal(size=(self.res_dim, 1))
+            return (-1/self.timeConst)*x + (1/self.timeConst)*np.tanh(np.dot(self.inWeights, u) + np.dot(self.matrix, x) + self.bias) + noise_f*np.random.normal(size=(self.res_dim, 1))
 
         def g_res(x, t):
             noise_g = 0
@@ -140,3 +138,10 @@ class Reservoir:
         np.savetxt(tempPath / "states.txt", self.state, '%f', '\t')
         np.savetxt(tempPath / "times.txt", self.times, '%f', '\t')
         np.savetxt(tempPath / "bias.txt", self.bias, '%f', '\t')
+
+    def resetState(self):
+        """
+        Resets the states and times matrices
+        """
+        self.times = np.zeros(1)
+        self.state = np.zeros((1,self.res_dim))
