@@ -4,7 +4,6 @@ import yaml
 import numpy.linalg
 import scipy.stats
 
-
 '''
 nodes = 3
 edges = 2
@@ -52,11 +51,13 @@ def trainRes(res,resin,resfb, resDim, outputDim,time, timeInput, timeOutput, was
         node1.append(M[x][0])
         node2.append(M[x][1])
         node3.append(M[x][2])
-    ax2.plot(node1, 'y', node2, 'b', node3, 'g')
+    ax2.plot(node1, 'y', label='node1')
+    ax2.plot(node2, 'b', label='node2')
+    ax2.plot(node3, 'g', label='node3')
+
     return numpy.dot(
         numpy.dot(numpy.transpose(T), M),
         numpy.linalg.inv(numpy.dot(numpy.transpose(M), M) + reg*numpy.eye(resDim)))
-
 
 
 def runRes(res, resin, resfb, resout, resDim, outputDim, timeInput, leakrate, bias, time):
@@ -95,27 +96,19 @@ for x in linespace:
 for y in linespace:
     timeOutput.append(numpy.sin(8*3.14*y))
 
-#Calling the functions to generate a reservoir
+# Calling the functions to generate a reservoir
 fig = plt.figure()
 ax1 = fig.add_axes([0.1, 0.5, 0.8, 0.4], ylim=(-1.2, 1.2), ylabel='Displacement')
 ax2 = fig.add_axes([0.1, 0.1, 0.8, 0.4], ylabel='Displacement',
                    ylim=(-1.2, 1.2), xlabel='Time Steps')
 resin = gresin(resDim, inputDim, 1)
-print(resin.shape)
 res = gres(spectralRadius, resDim, den)
-print(resin.shape)
-print('resin', resin)
 resfb = gresin(resDim, inputDim, inputDim)
-print(resfb.shape)
-
 resout = trainRes(res,resin, resfb, resDim, outputDim,time, timeInput,timeOutput,washout,leakrate, noise, bias, reg=1e-6)
-print(resout.shape)
-print('resout', resout)
 resend = runRes(res,resin,resfb,resout,resDim,outputDim,timeInput,leakrate,bias, time)
-print('resend',resend.shape)
-print(resend)
 #stores node data into yaml
 #nx.write_yaml(res, 'test.yaml')
 ax1.plot(timeInput, 'b--', timeOutput, 'r', resend, 'g*')
+ax2.legend(loc='upper right')
 plt.show()
 
