@@ -1,11 +1,10 @@
 # Reservoir Library
-Libraries for creating reservoirs as well as some test scripts
-# Reservoir.py
-A generic library for creating, training, and using reservoir systems.
+2 libraries for creating reservoirs with included samples and tests. Each library is a different implementation of a generic reservoir class. The main difference between the 2 is the internal math the inputs given to the reservoir. Both reservoirs give similar outputs however.
+# Reservoir1 Folder
+A generic library for creating, training, and using reservoir systems adapted from Jack Canaday's reservoir code.
 Includes commands to implement, train, propagate, reset, and export a reservoir.
-# ReservoirSinWaveSample.py
-A sample program that uses Reservoir.py to implement and train a reservoir.
-Creates a small reservoir, trains it to create a sin wave, then outputs that sin wave.
-The shapes of the Numpy arrays are important for Reservoir.py, so pay attention to those.
-# test_reservoir.py
-A unit test program for Reservoir.py used to test different functions.
+A sample implementation and a pytest unit test file are included.
+# Reservoir2 Folder
+A generic library for creating, training, and using reservoir systems.
+# Reservoir Graphing Folder
+Includes programs that create pretty pictures that show the theoretical structure of a reservoir.
