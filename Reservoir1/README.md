@@ -1,6 +1,7 @@
 # Reservoir.py
 A generic library for creating, training, and using reservoir systems.
 Includes commands to implement, train, propagate, reset, and export a reservoir.
+A lot of documentation is within the file itself.
 # ReservoirSinWaveSample.py
 A sample program that uses Reservoir.py to implement and train a reservoir.
 Creates a small reservoir, trains it to create a sin wave, then outputs that sin wave.
